@@ -11,7 +11,39 @@ script: https://cdnjs.cloudflare.com/ajax/libs/citation-js/0.7.15/citation.min.j
 
 @onload
 window.Cite = require('citation-js')
+
+window.bibliographyLoad = (url) => {
+  fetch(url)
+  .then((response) => {
+    return response.text();
+  })
+  .then((content) => {
+    window.bibliography = new Cite(content)
+  })
+}
+
+window.bibliographyLoad("https://raw.githubusercontent.com/LiaTemplates/citations/main/bibtex.bib")
+
 @end
+
+@ref
+<script>
+if (window.bibliography) {
+  const bib = structuredClone(window.bibliography)
+  bib.format = window.bibliography.format
+  bib.data = bib.data.filter((e) => e.id == "@0")
+
+  "HTML:" + bib.format('citation', {
+    format: 'html',
+    template: 'harvard1',
+    lang: 'en-US'
+  })
+} else {
+  "No global bibliography defined"
+}
+</script>
+@end
+
 
 @cite: @cite.style(harvard1,```@0```)
 
@@ -245,3 +277,9 @@ The link of the reference points at the corresponding website.
 ---
 
 @[bibliography.link.style(ieee)](./bibtex.bib)
+
+
+### Global
+
+
+@ref(johnson2019book)
