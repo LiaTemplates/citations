@@ -1,7 +1,6 @@
 <!--
 
-author:  André Dietrich, Sebastian Zug
-
+author:  Sebastian Zug; André Dietrich
 email:   LiaScript@web.de
 
 version: 0.0.1
@@ -14,9 +13,9 @@ script: https://cdnjs.cloudflare.com/ajax/libs/citation-js/0.7.15/citation.min.j
 window.Cite = require('citation-js')
 @end
 
-@cite: @citeWithStyle(harvard1,```@0```)
+@cite: @cite.style(harvard1,```@0```)
 
-@citeWithStyle
+@cite.style
 <script run-once modify="false">
 let bibtexEntries = `@1`;
 
@@ -28,7 +27,7 @@ let output = example.format('citation', {
   lang: 'en-US'
 })
 
-let url = bibtexEntries.match(/url=\{([^\}]+)/)
+let url = bibtexEntries.match(/url\s*=\s*\{([^\}]+)/)
 if (url && url.length > 1) 
 {
     output = `<a href="${url[1]}" target="blank_">${output}</a>`
@@ -38,9 +37,9 @@ if (url && url.length > 1)
 </script>
 @end
 
-@bibliography: @bibliographyWithStyle(harvard1,```@0```)
+@bibliography: @bibliography.style(harvard1,```@0```)
 
-@bibliographyWithStyle
+@bibliography.style
 <script run-once modify="false">
 let bibtexEntries = `@1`;
 
@@ -52,48 +51,29 @@ let output = example.format('bibliography', {
   lang: 'en-US'
 })
 
-"HTML:"+output
+"HTML:" + output
 </script>
 @end
 
+@bibliography.link: @bibliography.link_style(harvard1,@0)
 
-@bibliographyWithStyleFromFile
+@bibliography.link_style
 <script run-once modify="false">
+fetch("@1")
+.then((response) => {
+  return response.text();
+})
+.then((content) => {
+  const citation = new Cite(content)
+  const output = citation.format('bibliography', {
+    format: 'html',
+    template: `@0`,
+    lang: 'en-US'
+  })
+  send.html(output);
+})
 
-function fetchFileContent(url) {
-  return fetch(url)
-    .then(function(response) {
-      if (!response.ok) {
-          throw new Error('HTTP error! status: ' + response.status);
-      }
-      return response.blob();
-    })
-    .then(function(blob) {
-      return new Promise(function(resolve, reject) {
-        var reader = new FileReader();
-        reader.onloadend = function() {
-            resolve(reader.result);
-        };
-        reader.onerror = function() {
-            reject('Error reading the file');
-        };
-        reader.readAsText(blob); // oder 'readAsArrayBuffer(blob)' für Binärdaten
-      });
-    })
-    .catch(function(error) {
-      console.error('Es gab einen Fehler beim Abrufen der Datei:', error);
-      return null;
-    });
-}
-
-fetchFileContent(https://raw.githubusercontent.com/LiaTemplates/citations/main/bibtex.bib)
-    .then(function(content) {
-        let references = content
-        console.log("************************************************");
-        console.log('Dateiinhalt:', references);
-    });
-
-
+"LIA: wait"
 </script>
 @end
 
@@ -166,9 +146,9 @@ And of course, you could also clone this project and change it, as you wish.
 
 ## Usage examples
 
-`@cite`
+### `@cite`
 
-````
+```` bibtex
 ```bibtex @cite
 @book{johnson2019book,
   title={The Complete Guide to Examples},
@@ -185,52 +165,83 @@ The link of the reference points at the corresponding website.
 
 ```bibtex @cite
 @book{johnson2019book,
-  title={The Complete Guide to Examples},
-  author={Johnson, Emily},
-  year={2019},
-  publisher={Academic Press},
-  address={New York},
-  url={https://doi.org/10.1000/conf.2021.123} 
+  title     = {The Complete Guide to Examples},
+  author    = {Johnson, Emily},
+  year      = {2019},
+  publisher = {Academic Press},
+  address   = {New York},
+  url       = {https://doi.org/10.1000/conf.2021.123} 
 }
 ```
 
--------------------------------------------------------------------------------
-
-`@bibliographyWithStyle`
-
-````
-```bibtex @bibliographyWithStyle(ieee)
+```bibtex @cite.style(ieee)
 @book{johnson2019book,
-  title={The Complete Guide to Examples},
-  author={Johnson, Emily},
-  year={2019},
-  publisher={Academic Press},
-  address={New York},
-  url={https://doi.org/10.1000/conf.2021.123} 
+  title     = {The Complete Guide to Examples},
+  author    = {Johnson, Emily},
+  year      = {2019},
+  publisher = {Academic Press},
+  address   = {New York},
+  url       = {https://doi.org/10.1000/conf.2021.123} 
+}
+```
+
+### `@bibliography`
+
+```` bibtex
+```bibtex @bibliography.style(ieee)
+@book{johnson2019book,
+  title     = {The Complete Guide to Examples},
+  author    = {Johnson, Emily},
+  year      = {2019},
+  publisher = {Academic Press},
+  address   = {New York},
+  url       = {https://doi.org/10.1000/conf.2021.123}
+}
+
+@book{texbook,
+  author    = {Donald E. Knuth},
+  year      = {1986},
+  title     = {The {\TeX} Book},
+  publisher = {Addison-Wesley Professional}
 }
 ```
 ````
 
 The link of the reference points at the corresponding website.
 
-```bibtex @bibliographyWithStyle(ieee)
+```bibtex @bibliography.style(ieee)
 @book{johnson2019book,
-  title={The Complete Guide to Examples},
-  author={Johnson, Emily},
-  year={2019},
-  publisher={Academic Press},
-  address={New York},
-  url={https://doi.org/10.1000/conf.2021.123} 
+  title     = {The Complete Guide to Examples},
+  author    = {Johnson, Emily},
+  year      = {2019},
+  publisher = {Academic Press},
+  address   = {New York},
+  url       = {https://doi.org/10.1000/conf.2021.123}
+}
+
+@book{texbook,
+  author    = {Donald E. Knuth},
+  year      = {1986},
+  title     = {The {\TeX} Book},
+  publisher = {Addison-Wesley Professional}
 }
 ```
 
 -------------------------------------------------------------------------------
 
-`@bibliographyWithStyleFromFile`
+### `@bibliography.link`
 
 
+``` markdown
+@[bibliography.link](./bibtex.bib)
+
+---
+
+@[bibliography.link.style(ieee)](./bibtex.bib)
 ```
-@bibliographyfromFile(https://raw.githubusercontent.com/LiaTemplates/citations/main/bibtex.bib)
-```
 
-@bibliographyfromFile(https://raw.githubusercontent.com/LiaTemplates/citations/main/bibtex.bib)
+@[bibliography.link](./bibtex.bib)
+
+---
+
+@[bibliography.link.style(ieee)](./bibtex.bib)
