@@ -3,7 +3,7 @@
 author:  Sebastian Zug; André Dietrich
 email:   LiaScript@web.de
 
-version: 0.0.1
+version: 0.0.2
 
 comment: This is a simple plugin for embedding bibtex based references in LiaScript materials.
 
@@ -22,50 +22,66 @@ window.bibliographyLoad = (url) => {
   })
 }
 
-window.bibliographyLoad("https://raw.githubusercontent.com/LiaTemplates/citations/main/bibtex.bib")
-
+//window.bibliographyLoad("https://raw.githubusercontent.com/LiaTemplates/citations/main/bibtex.bib")
 @end
 
 @ref
-<script>
-if (window.bibliography) {
-  const bib = structuredClone(window.bibliography)
-  bib.format = window.bibliography.format
-  bib.data = bib.data.filter((e) => e.id == "@0")
+<script run-once modify="false">
+function cite() {
+  if (!window.Cite) {
+    setTimeout(cite, 100)
+    return
+  }
 
-  "HTML:" + bib.format('citation', {
-    format: 'html',
-    template: 'harvard1',
-    lang: 'en-US'
-  })
-} else {
-  "No global bibliography defined"
+  if (window.bibliography) {
+    const bib = structuredClone(window.bibliography)
+    bib.format = window.bibliography.format
+    bib.data = bib.data.filter((e) => e.id == "@0")
+
+    send.lia("HTML:" + bib.format('citation', {
+      format: 'html',
+      template: 'harvard1',
+      lang: 'en-US'
+    }))
+  } else {
+    send.lia("No global bibliography defined")
+  }
 }
+
+cite()
+"LIA: wait"
 </script>
 @end
-
 
 @cite: @cite.style(harvard1,```@0```)
 
 @cite.style
 <script run-once modify="false">
-let bibtexEntries = `@1`;
+function cite() {
+  if (!window.Cite) {
+    setTimeout(cite, 100)
+    return
+  }
 
-let example = new Cite(bibtexEntries)
+  const example = new Cite(`@1`)
 
-let output = example.format('citation', {
-  format: 'html',
-  template: `@0`,
-  lang: 'en-US'
-})
+  let output = example.format('citation', {
+    format: 'html',
+    template: `@0`,
+    lang: 'en-US'
+  })
 
-let url = bibtexEntries.match(/url\s*=\s*\{([^\}]+)/)
-if (url && url.length > 1) 
-{
-    output = `<a href="${url[1]}" target="blank_">${output}</a>`
+  let url = `@1`.match(/url\s*=\s*\{([^\}]+)/)
+  if (url && url.length > 1) 
+  {
+      output = `<a href="${url[1]}" target="blank_">${output}</a>`
+  }
+
+  send.lia("HTML:"+output)
 }
 
-"HTML:"+output
+cite()
+"LIA: wait"
 </script>
 @end
 
@@ -73,38 +89,60 @@ if (url && url.length > 1)
 
 @bibliography.style
 <script run-once modify="false">
-let bibtexEntries = `@1`;
+function cite() {
+  if (!window.Cite) {
+    setTimeout(cite, 100)
+    return
+  }
 
-let example = new Cite(bibtexEntries)
+  const example = new Cite(`@1`)
 
-let output = example.format('bibliography', {
-  format: 'html',
-  template: `@0`,
-  lang: 'en-US'
-})
-
-"HTML:" + output
-</script>
-@end
-
-@bibliography.link: @bibliography.link_style(harvard1,@0)
-
-@bibliography.link_style
-<script run-once modify="false">
-fetch("@1")
-.then((response) => {
-  return response.text();
-})
-.then((content) => {
-  const citation = new Cite(content)
-  const output = citation.format('bibliography', {
+  let output = example.format('bibliography', {
     format: 'html',
     template: `@0`,
     lang: 'en-US'
   })
-  send.html(output);
-})
 
+  let url = `@1`.match(/url\s*=\s*\{([^\}]+)/)
+  if (url && url.length > 1) 
+  {
+      output = `<a href="${url[1]}" target="blank_">${output}</a>`
+  }
+
+  send.lia("HTML:"+output)
+}
+
+cite()
+"LIA: wait"
+</script>
+@end
+
+@bibliography.link: @bibliography.link.style(harvard1,@0)
+
+@bibliography.link.style
+<script run-once modify="false">
+function cite() {
+  if (!window.Cite) {
+    setTimeout(cite, 100)
+    return
+  }
+
+  fetch(`@1`)
+  .then((response) => {
+    return response.text();
+  })
+  .then((content) => {
+    const citation = new Cite(content)
+    const output = citation.format('bibliography', {
+      format: 'html',
+      template: `@0`,
+      lang: 'en-US'
+    })
+    send.html(output);
+  })
+}
+
+cite()
 "LIA: wait"
 </script>
 @end
@@ -135,19 +173,17 @@ But you can also copy the required functionality directly into the header of you
 And of course, you could also clone this project and change it, as you wish.
 
       {{1}}
-
 - Load the macros via and set the persistence flag to true.
   Persistent will guarantee, that your drawings will be updated, even if you are on another slide.
 
   ```text
   import: https://raw.githubusercontent.com/LiaTemplates/citations/main/README.md
-
   ```
 
   or use the tagged version:
 
   ```text
-  import: https://raw.githubusercontent.com/LiaTemplates/citations/main/0.0.1/README.md
+  import: https://raw.githubusercontent.com/LiaTemplates/citations/main/0.0.2/README.md
   ```
 
 - Copy the definitions into your Project
@@ -158,23 +194,27 @@ And of course, you could also clone this project and change it, as you wish.
 
 1. The **representation*** can be 
 
-    + `cite` - short key reference
-       @cite(https://doi.org/10.1080/08993408.2022.2029046)
-    
-    + `bibliography` - detailed reference
-       @bibliography(https://doi.org/10.1080/08993408.2022.2029046)
+   - `cite` - short key reference
+      @cite(https://doi.org/10.1080/08993408.2022.2029046)
 
-2. The current implementation distinguishes the user patterns in three directions: Currently just three **styles of documents** are supported#️⃣
+   - `bibliography` - detailed reference
+      @bibliography(https://doi.org/10.1080/08993408.2022.2029046)
 
-    + `ieee` @bibliographyWithStyle(ieee, 10.5281/zenodo.1005176)
-    
-    + `vancouver` @bibliographyWithStyle(vancouver, 10.5281/zenodo.1005176)
-    
-    + `harvard1` @bibliographyWithStyle(harvard1, 10.5281/zenodo.1005176)
+2. The current implementation distinguishes the user patterns in three directions:
+   Currently just three **styles of documents** are supported#️⃣
 
-    The pattern is adressed by calling `bibliographyWithStyle()` or `citeWithStyle()`. The short term versions `bibliography` or `cite` use `harvard1` as default value.
+   - `ieee` @bibliography.style(ieee, 10.5281/zenodo.1005176)
 
-3. The reference data may be recorded directly in the document or in a separate file. This can then be read in via the URL. The corresponding versions `bibliographyWithStyleFromFile` or `citeWithStyleFromFile()` have two parameters, the style pattern from (2) and a url representing a bibtexfile.
+   - `vancouver` @bibliography.style(vancouver, 10.5281/zenodo.1005176)
+
+   - `harvard1` @bibliography.style(harvard1, 10.5281/zenodo.1005176)
+
+   The pattern is addressed by calling `@bibliography.style()` or `@cite.style()`.
+   The short term versions `@bibliography` or `cite` use `harvard1` as default value.
+
+3. The reference data may be recorded directly in the document or in a separate file.
+   This can then be read in via the URL.
+   The corresponding versions `@bibliography.link` or `@bibliography.link.style` have two parameters, the style pattern from (2) and a url representing a bibtexfile.
 
 ## Usage examples
 
