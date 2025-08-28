@@ -3,7 +3,7 @@
 author:  Sebastian Zug; André Dietrich
 email:   LiaScript@web.de
 
-version: 0.0.2
+version: 0.0.3
 
 comment: This is a simple plugin for embedding bibtex based references in LiaScript materials.
 
@@ -12,20 +12,39 @@ script: https://cdnjs.cloudflare.com/ajax/libs/citation-js/0.7.15/citation.min.j
 @onload
 window.Cite = require('citation-js')
 
-window.bibliographyLoad = (url) => {
-  fetch(url)
-  .then((response) => {
-    return response.text();
-  })
-  .then((content) => {
-    window.bibliography = new Cite(content)
-  })
+window.bibliography = {
+  data: null,
+
+  init: function (bibtex) {
+    if (!window.Cite) {
+      setTimeout(() => this.init(bibtex), 100)
+    } else {
+      this.data = new Cite(bibtex)
+    }
+  },
+
+  load: function (url) {
+    fetch(url)
+    .then((response) => {
+      return response.text();
+    })
+    .then((content) => {
+      this.init(content)
+    })
+  }
 }
 
-//window.bibliographyLoad("https://raw.githubusercontent.com/LiaTemplates/citations/main/bibtex.bib")
+window.bibliographyLoad = function (url) {
+  window.bibliography.load(url)
+}
+
+// window.bibliography.load("https://raw.githubusercontent.com/LiaTemplates/citations/main/bibtex.bib")
+
 @end
 
-@ref
+@ref: @ref.style(harvard1,```@0```)
+
+@ref.style
 <script run-once modify="false">
 function cite() {
   if (!window.Cite) {
@@ -33,16 +52,13 @@ function cite() {
     return
   }
 
-  if (window.bibliography) {
-    const bib = structuredClone(window.bibliography)
-    bib.format = window.bibliography.format
-    bib.data = bib.data.filter((e) => e.id == "@0")
-
-    send.lia("HTML:" + bib.format('citation', {
-      format: 'html',
-      template: 'harvard1',
-      lang: 'en-US'
-    }))
+  if (window.bibliography.data) {
+    const cite = window.bibliography.data;
+const filtered = new Cite(cite.data.filter((e) => e.id == "@1"));
+send.lia("HTML:" + filtered.format('citation', {
+  format: 'html',
+  template: '@0'
+}));
   } else {
     send.lia("No global bibliography defined")
   }
@@ -95,12 +111,18 @@ function cite() {
     return
   }
 
-  const example = new Cite(`@1`)
+  let example;
+  let bibtex = `@1`;
+
+  if (bibtex.startsWith("@")) {
+     example = window.bibliography.data;
+  } else {
+     example = new Cite(bibtex);
+  }
 
   let output = example.format('bibliography', {
     format: 'html',
-    template: `@0`,
-    lang: 'en-US'
+    template: `@0`
   })
 
   let url = `@1`.match(/url\s*=\s*\{([^\}]+)/)
@@ -120,6 +142,7 @@ cite()
 @bibliography.link: @bibliography.link.style(harvard1,@0)
 
 @bibliography.link.style
+
 <script run-once modify="false">
 function cite() {
   if (!window.Cite) {
@@ -154,7 +177,7 @@ cite()
     --{{0}}--
 This plugin supports the use of Bibtex-based references. The user can either specify the corresponding literature sources directly in the LiaScript document or store them in a separate file and address them using a URL.
 
-This LiaScript plugin uses the [citation_js](https://citation.js.org/) implementation of  L. G.Willighagen. Many thanks for his great work 
+This LiaScript plugin uses the [citation_js](https://citation.js.org/) implementation of  L. G.Willighagen. Many thanks for his great work.
 
 @bibliography(10.5281/zenodo.1005176)
 
@@ -183,7 +206,7 @@ And of course, you could also clone this project and change it, as you wish.
   or use the tagged version:
 
   ```text
-  import: https://raw.githubusercontent.com/LiaTemplates/citations/main/0.0.2/README.md
+  import: https://raw.githubusercontent.com/LiaTemplates/citations/main/0.0.3/README.md
   ```
 
 - Copy the definitions into your Project
@@ -321,5 +344,7 @@ The link of the reference points at the corresponding website.
 
 ### Global
 
+
+@ref.style(apa,johnson2019book)
 
 @ref(johnson2019book)
